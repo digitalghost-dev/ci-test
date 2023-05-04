@@ -68,6 +68,6 @@ jobs:
 
         uses: Ilshidur/action-discord@master
         with:
-          args: eval cat output.txt
+          args: contents:output.txt
         
     
