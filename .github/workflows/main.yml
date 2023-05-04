@@ -68,6 +68,6 @@ jobs:
 
         uses: Ilshidur/action-discord@master
         with:
-          args: file:output.txt
+          args: ./output.txt
         
     
