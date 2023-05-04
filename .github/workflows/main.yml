@@ -62,7 +62,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v3
         with:
-          name: output.txt
+          name: output
           path: ./output.txt
 
       - id: 'auth'
