@@ -18,6 +18,9 @@ on:
   push:
     branches:
       - "main"
+      
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
 jobs:
   lint:
@@ -39,5 +42,20 @@ jobs:
       - name: Run Pylint
         continue-on-error: true
         run: pylint test.py
+        
+  Discord:
+    needs: [lint]
+    runs-on: ubuntu-latest
+
+    steps:
+    
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Discord notification
+
+        uses: Ilshidur/action-discord@master
+        with:
+          args: 'The project {{ EVENT_PAYLOAD.repository.full_name }} has been deployed.'
         
     
