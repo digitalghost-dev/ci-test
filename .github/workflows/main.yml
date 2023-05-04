@@ -77,5 +77,5 @@ jobs:
       - id: 'upload-file'
         uses: 'google-github-actions/upload-cloud-storage@v1'
         with:
-          path: './output.txt'
+          path: 'output.txt'
           destination: 'pylint-exports/output.txt'
