@@ -41,7 +41,7 @@ jobs:
         
       - name: Run Pylint
         continue-on-error: true
-        run: pylint test.py > output.txt
+        run: pylint ./test.py > output.txt
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
@@ -68,6 +68,6 @@ jobs:
 
         uses: Ilshidur/action-discord@master
         with:
-          args: $(cat output.txt)
+          args: cat output.txt
         
     
