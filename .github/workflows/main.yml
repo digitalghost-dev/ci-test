@@ -49,8 +49,12 @@ jobs:
           name: output
           path: ./output.txt
         
-  Discord:
+  google-cloud-upload:
     needs: [lint]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
     runs-on: ubuntu-latest
 
     steps:
@@ -63,11 +67,15 @@ jobs:
         with:
           name: output
           path: ./output.txt
-        
-      - name: Discord notification
 
-        uses: Ilshidur/action-discord@master
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
         with:
-          args: ./output.txt
-        
-    
+          workload_identity_provider: 'projects/463690670206/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: 'cloud-storage@cloud-data-infrastructure.iam.gserviceaccount.com'
+
+      - id: 'upload-file'
+        uses: 'google-github-actions/upload-cloud-storage@v1'
+        with:
+          path: './output.txt'
+          destination: 'pylint-exports/output.txt'
