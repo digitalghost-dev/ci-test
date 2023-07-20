@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   workflow_dispatch:
@@ -10,69 +10,148 @@ on:
         type: choice
         options:
         - info
-        - debug
-        - warning
-        - error
-        - critical
-        
+
   push:
+    paths-ignore:
+      - '.github/**'
+      - 'api/**'
+      - 'etl/**'
+      - 'CHANGELOG.md'
+      - '.gitignore'
+      - '.pylintrc'
+      - 'README.md'
     branches:
       - "main"
-
-jobs:
-  lint:
+        
+env:
+  GAR_LOCATION: us-central1
+  VERSION_NUMBER: '2.5'
+  CLOUD_BUCKET: ${{ secrets.CLOUD_BUCKET }}
+  EMAIL: ${{ secrets.EMAIL }}
+  NAME: ${{ secrets.NAME }}
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGISTRY_REPO: ${{ secrets.REGISTRY_REPO }}
+  WIF_PROVIDER: ${{ secrets.WIF_PROVIDER }}
+  WIF_SERVICE_ACCOUNT_ARTIFACT_REGISTRY: ${{ secrets.WIF_SERVICE_ACCOUNT_ARTIFACT_REGISTRY }}
+  WIF_SERVICE_ACCOUNT_CLOUD_STORAGE: ${{ secrets.WIF_SERVICE_ACCOUNT_CLOUD_STORAGE }}
+  
+jobs:  
+  check-for-changes:
     runs-on: ubuntu-latest
+    outputs:
+      exit_code: ${{ steps.check.outputs.exit_code }}
 
     steps:
-    
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Black
+        run: python -m pip install black
+
+      - name: Check Black Formatting
+        id: check
+        run: |
+          black data/ --check || exit_code=$?
+          echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+        
+  black-formatting:
+    runs-on: ubuntu-latest
+    needs: [check-for-changes]
+    if: ${{ needs.check-for-changes.outputs.exit_code == 1 }}
+
+    steps:
+        - name: Checkout Code
+          uses: actions/checkout@v3
+
+        - name: Install Black
+          run: python -m pip install black
+
+        - name: Apply Black Formatting
+          run: black data/
+
+        - name: Commit Changes
+          run: |
+            git config --local user.email "${{ env.EMAIL }}"
+            git config --local user.name "${{ env.NAME }}"
+            git add .
+            git commit -m "Apply Black Formatting" --allow-empty
+            git push
+                
+  pylint-check:
+    runs-on: ubuntu-latest
+    needs: [check-for-changes, black-formatting]
+    if: |
+      always() &&
+      (needs.black-formatting.result == 'success' || needs.black-formatting.result == 'skipped')
+
+    steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-        
+
       - name: Install Dependencies
         run: pip install pylint
-        
+
       - name: Run Pylint
         continue-on-error: true
         run: pylint data/ > pylint_output.txt
-        
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: output
-          path: ./output.txt
+      - name: Upload Artifact	
+        uses: actions/upload-artifact@v3	
+        with:	
+          name: pylint_output
+          path: ./pylint_output.txt
         
   google-cloud-upload:
-    needs: [lint]
+    runs-on: ubuntu-latest
+    needs: [pylint-check]
+    if: |
+      always() &&
+      (needs.pylint-check.result == 'success')
     permissions:
       contents: 'read'
       id-token: 'write'
-    
-    runs-on: ubuntu-latest
-
+      
     steps:
-    
+
       - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Download Artifact
         uses: actions/download-artifact@v3
         with:
-          name: output
+          name: pylint_output
           path: .
-
       - id: 'auth'
         uses: 'google-github-actions/auth@v1'
         with:
-          workload_identity_provider: 'projects/463690670206/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
-          service_account: 'cloud-storage-sa@cloud-data-infrastructure.iam.gserviceaccount.com'
-
+          workload_identity_provider: '${{ env.WIF_PROVIDER }}'
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT_CLOUD_STORAGE }}
       - id: 'upload-file'
         uses: 'google-github-actions/upload-cloud-storage@v1'
         with:
-          path: 'output.txt'
-          destination: 'pylint-exports'
+          path: 'pylint_output.txt'
+          destination: '${{ env.CLOUD_BUCKET }}'
+
+  security:
+    runs-on: ubuntu-latest
+    needs: [check-for-changes, black-formatting]
+    if: |
+      always() &&
+      (needs.black-formatting.result == 'success' || needs.black-formatting.result == 'skipped')
+    steps:
+        - uses: actions/checkout@master
+        - name: Run Snyk to check for vulnerabilities
+          uses: snyk/actions/python-3.10@master
+          continue-on-error: true # To make sure that SARIF upload gets called
+          env:
+            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          with:
+            args: --sarif-file-output=snyk.sarif
+        - name: Upload result to GitHub Code Scanning
+          uses: github/codeql-action/upload-sarif@v2
+          with:
+            sarif_file: snyk.sarif
