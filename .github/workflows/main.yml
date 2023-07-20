@@ -138,10 +138,7 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
-    needs: [check-for-changes, black-formatting]
-    if: |
-      always() &&
-      (needs.black-formatting.result == 'success' || needs.black-formatting.result == 'skipped')
+
     steps:
         - uses: actions/checkout@master
         - name: Run Snyk to check for vulnerabilities
