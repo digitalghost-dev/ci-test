@@ -34,6 +34,7 @@ env:
   WIF_PROVIDER: ${{ secrets.WIF_PROVIDER }}
   WIF_SERVICE_ACCOUNT_ARTIFACT_REGISTRY: ${{ secrets.WIF_SERVICE_ACCOUNT_ARTIFACT_REGISTRY }}
   WIF_SERVICE_ACCOUNT_CLOUD_STORAGE: ${{ secrets.WIF_SERVICE_ACCOUNT_CLOUD_STORAGE }}
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
   
 jobs:  
   check-for-changes:
@@ -71,8 +72,8 @@ jobs:
 
         - name: Commit Changes
           run: |
-            git config --local user.email "${{ env.EMAIL }}"
-            git config --local user.name "${{ env.NAME }}"
+            git config --local user.email ${{ env.EMAIL }}
+            git config --local user.name ${{ env.NAME }}
             git add .
             git commit -m "Apply Black Formatting" --allow-empty
             git push
@@ -128,7 +129,7 @@ jobs:
       - id: 'auth'
         uses: 'google-github-actions/auth@v1'
         with:
-          workload_identity_provider: '${{ env.WIF_PROVIDER }}'
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.WIF_SERVICE_ACCOUNT_CLOUD_STORAGE }}
       - id: 'upload-file'
         uses: 'google-github-actions/upload-cloud-storage@v1'
@@ -138,6 +139,11 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
+    
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     steps:
         - uses: actions/checkout@master
@@ -145,7 +151,7 @@ jobs:
           uses: snyk/actions/python-3.10@master
           continue-on-error: true # To make sure that SARIF upload gets called
           env:
-            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+            SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
           with:
             args: --sarif-file-output=snyk.sarif
         - name: Upload result to GitHub Code Scanning
