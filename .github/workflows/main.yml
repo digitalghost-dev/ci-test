@@ -55,7 +55,7 @@ jobs:
           cp ./Dockerfile docker-context
           cp ./streamlit_app.py docker-context
           cp ./requirements.txt docker-context
-          cp ./.streamlit/config.toml docker-context
+          cp -r ./.streamlit/config.toml docker-context
         
       - name: Build and Export
         uses: docker/build-push-action@v4
