@@ -80,7 +80,7 @@ jobs:
     needs: [build-streamlit-image]
     if: |
       always() &&
-      (needs.build-stadiums.result == 'success')
+      (needs.build-streamlit-image.result == 'success')
     steps:
     
       - name: Checkout
