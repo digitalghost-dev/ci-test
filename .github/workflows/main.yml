@@ -68,7 +68,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: stadiums
+          name: streamlit
           path: /tmp/streamlit.tar
           
   syft:
