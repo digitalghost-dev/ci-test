@@ -118,7 +118,7 @@ jobs:
     
       - uses: actions/download-artifact@v3
         with:
-          name: streamlit-sbom.spdx.json
+          name: streamlit-sbom-${{ env.VERSION_NUMBER }}.spdx.json
           
       - name: Scan SBOM
         uses: anchore/scan-action@v3
