@@ -108,8 +108,9 @@ jobs:
           
   grype:
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      actions: read
+      contents: read
+      security-events: write
       
     needs: [syft]
     runs-on: ubuntu-latest
