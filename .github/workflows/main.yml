@@ -116,7 +116,7 @@ jobs:
       - name: Scan SBOM
         uses: anchore/scan-action@v3
         with:
-          sbom: "streamlit:${{ env.VERSION_NUMBER }}.spdx.json"
+          sbom: "streamlit_2_5.spdx.json"
           fail-build: false
           output-format: table
   
