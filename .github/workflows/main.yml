@@ -51,11 +51,12 @@ jobs:
       - name: Prepare Docker Build Context
         run: |
           mkdir docker-context
+          mkdir docker-context/.streamlit
           cp ./.dockerignore docker-context
           cp ./Dockerfile docker-context
           cp ./streamlit_app.py docker-context
           cp ./requirements.txt docker-context
-          cp -r ./.streamlit/config.toml docker-context
+          cp -r ./.streamlit/config.toml docker-context/.streamlit
         
       - name: Build and Export
         uses: docker/build-push-action@v4
