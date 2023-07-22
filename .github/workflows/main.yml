@@ -103,6 +103,7 @@ jobs:
       - uses: anchore/sbom-action@v0
         with:
           image: streamlit:${{ env.VERSION_NUMBER }}
+          upload-artifact: true
   
   security:
     runs-on: ubuntu-latest
