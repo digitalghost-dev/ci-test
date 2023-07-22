@@ -51,6 +51,8 @@ jobs:
       - name: Prepare Docker Build Context
         run: |
           mkdir docker-context
+          cp ./.dockerignore docker-context
+          cp ./Dockerfile docker-context
           cp ./streamlit_app.py docker-context
           cp ./requirements.txt docker-context
           cp ./.streamlit/config.toml docker-context
