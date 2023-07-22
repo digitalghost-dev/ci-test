@@ -103,6 +103,7 @@ jobs:
       - uses: anchore/sbom-action@v0
         with:
           image: streamlit:${{ env.VERSION_NUMBER }}
+          artifact-name: streamlit-sbom.spdx.json
           upload-artifact: true
           
   grype:
@@ -113,13 +114,19 @@ jobs:
     needs: [syft]
     runs-on: ubuntu-latest
     steps:
+    
+      - uses: actions/download-artifact@v3
+        with:
+          name: streamlit-sbom.spdx.json
+          
       - name: Scan SBOM
         uses: anchore/scan-action@v3
         id: scan
         with:
-          sbom: "streamlit_2_5.spdx.json"
+          sbom: "streamlit-sbom.spdx.json"
           fail-build: false
           output-format: sarif
+          
       - name: Upload SARIF Report
         uses: github/codeql-action/upload-sarif@v2
         with:
