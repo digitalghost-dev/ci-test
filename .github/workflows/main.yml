@@ -103,7 +103,7 @@ jobs:
       - uses: anchore/sbom-action@v0
         with:
           image: streamlit:${{ env.VERSION_NUMBER }}
-          artifact-name: streamlit-sbom.spdx.json
+          artifact-name: streamlit-sbom-${{ env.VERSION_NUMBER }}.spdx.json
           upload-artifact: true
           
   grype:
@@ -124,7 +124,7 @@ jobs:
         uses: anchore/scan-action@v3
         id: scan
         with:
-          sbom: "streamlit-sbom.spdx.json"
+          sbom: streamlit-sbom-${{ env.VERSION_NUMBER }}.spdx.json
           fail-build: false
           output-format: sarif
           
