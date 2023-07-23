@@ -38,6 +38,29 @@ env:
   
 jobs:
 
+  version-test:
+    name: Run Streamlit with Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9, 3.10, 3.11]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Streamlit
+        run: pip install streamlit
+
+      - name: Run Streamlit app
+        run: streamlit run streamlit_app.py
+
   check-for-changes:
     runs-on: ubuntu-latest
     outputs:
