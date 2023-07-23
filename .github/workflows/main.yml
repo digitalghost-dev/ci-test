@@ -71,7 +71,7 @@ jobs:
           name: streamlit
           path: /tmp/streamlit.tar
           
-  deploy-artifact-registry:
+  push-streamlit-image:
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -102,6 +102,7 @@ jobs:
           token_format: 'access_token'
           workload_identity_provider: '${{ env.WIF_PROVIDER }}'
           service_account: '${{ env.WIF_SERVICE_ACCOUNT_ARTIFACT_REGISTRY }}'
+          project_id: '${{ env.PROJECT_ID }}'
           
       - name: Docker Auth
         id: docker-auth
