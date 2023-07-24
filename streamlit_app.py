@@ -20,6 +20,7 @@ from google.oauth2 import service_account
 
 st.set_page_config(page_title="Overview", layout="wide")
 
+
 def firestore_connection():
     # Create API client.
     credentials = service_account.Credentials.from_service_account_info(
@@ -34,6 +35,7 @@ def firestore_connection():
         firebase_admin.initialize_app()
 
     return firestore_database
+
 
 def postgresql_connection():
     # Initialize connection.
@@ -55,35 +57,46 @@ def postgresql_connection():
     schema = "premier-league-schema"
 
     # Stadium query and dataframe.
-    stadiums_data = run_query(f"""
+    stadiums_data = run_query(
+        f"""
         SELECT latitude, longitude, stadium, team
         FROM "{schema}"."stadiums"
     """
     )
 
-    stadiums_df = pd.DataFrame(data=stadiums_data, columns=["Latitude", "Longitude", "Stadium", "Team"])
+    stadiums_df = pd.DataFrame(
+        data=stadiums_data, columns=["Latitude", "Longitude", "Stadium", "Team"]
+    )
 
     # Standings query and dataframe.
-    standings_data = run_query(f"""
+    standings_data = run_query(
+        f"""
             SELECT rank, team, points, wins, draws, loses, goals_for, goals_against, goal_difference
             FROM "{schema}"."standings";
             """
-        )
+    )
 
-    standings_df = pd.DataFrame(data=standings_data, columns=["Rank", "Team", "Points", "Wins", "Draws", "Loses", "GF", "GA", "GD"])
+    standings_df = pd.DataFrame(
+        data=standings_data,
+        columns=["Rank", "Team", "Points", "Wins", "Draws", "Loses", "GF", "GA", "GD"],
+    )
 
     # Splitting Standings table to get values to build metric cards.
-    status_data = run_query(f"""
+    status_data = run_query(
+        f"""
         SELECT rank, team, points, position_status
         FROM "{schema}"."standings"
         ORDER BY Rank
         """
     )
 
-    status_df = pd.DataFrame(data=status_data, columns=["Rank", "Team", "Points", "Status"])
+    status_df = pd.DataFrame(
+        data=status_data, columns=["Rank", "Team", "Points", "Status"]
+    )
 
     # Teams query and dataframe.
-    teams_data = run_query(f"""
+    teams_data = run_query(
+        f"""
         SELECT logo, form, t.team, clean_sheets, penalties_scored, penalties_missed, average_goals, win_streak
         FROM "{schema}"."teams" AS t
         LEFT JOIN "{schema}"."standings" AS s
@@ -92,41 +105,76 @@ def postgresql_connection():
         """
     )
 
-    teams_df = pd.DataFrame(data=teams_data, columns=["Logo", "Form", "Team", "Clean Sheets", "Penalties Scored", "Penalties Missed", "Average Goals", "Win Streak"])
+    teams_df = pd.DataFrame(
+        data=teams_data,
+        columns=[
+            "Logo",
+            "Form",
+            "Team",
+            "Clean Sheets",
+            "Penalties Scored",
+            "Penalties Missed",
+            "Average Goals",
+            "Win Streak",
+        ],
+    )
 
     # Top Scorers query and dataframe.
-    top_scorers_data = run_query(f"""
+    top_scorers_data = run_query(
+        f"""
         SELECT *
         FROM "{schema}"."top_scorers"
         ORDER BY Goals DESC
         """
     )
 
-    top_scorers_df = pd.DataFrame(data=top_scorers_data, columns=["Name", "Goals", "Team", "Assists", "Nationality", "Photo"])
+    top_scorers_df = pd.DataFrame(
+        data=top_scorers_data,
+        columns=["Name", "Goals", "Team", "Assists", "Nationality", "Photo"],
+    )
 
     # Fetching the minimun round number from the 'rounds' table.
-    min_round_row = run_query(f"""
+    min_round_row = run_query(
+        f"""
             SELECT MIN(round) 
             FROM "{schema}"."rounds";
             """
-        )
+    )
     # Converting tuple to list.
     min_round = list(min_round_row[0])
-    
+
     # Fetching the maximum round number from the 'rounds' table.
-    max_round_row = run_query(f"""
+    max_round_row = run_query(
+        f"""
             SELECT MAX(round) 
             FROM "{schema}"."rounds";
             """
-        )
+    )
     # Converting tuple to list.
     max_round = list(max_round_row[0])
 
-    return stadiums_df, standings_df, status_df, teams_df, top_scorers_df, min_round, max_round
+    return (
+        stadiums_df,
+        standings_df,
+        status_df,
+        teams_df,
+        top_scorers_df,
+        min_round,
+        max_round,
+    )
+
 
 def streamlit_app():
     # Calling varibles from database connection functions.
-    stadiums_df, standings_df, status_df, teams_df, top_scorers_df, min_round, max_round = postgresql_connection()
+    (
+        stadiums_df,
+        standings_df,
+        status_df,
+        teams_df,
+        top_scorers_df,
+        min_round,
+        max_round,
+    ) = postgresql_connection()
     firestore_database = firestore_connection()
 
     logo = st.secrets["elements"]["logo_image"]
@@ -146,9 +194,9 @@ def streamlit_app():
         formatted_date = current_date.strftime("%B %dth, %Y")
         st.write(f"{formatted_date}")
 
-    with st.spinner('Loading data...'):
+    with st.spinner("Loading data..."):
         time.sleep(6)
-        
+
         # Tab menu.
         tab1, tab2, tab3 = st.tabs(["Standings", "Statistics", "Fixtures"])
 
@@ -167,17 +215,29 @@ def streamlit_app():
                         status = "up"
 
                     st.metric(
-                        label = f"{status_df.iloc[index][1]}", # Teams
-                        value = f"Pts: {status_df.iloc[index][2]}", # Points
-                        delta = status,
+                        label=f"{status_df.iloc[index][1]}",  # Teams
+                        value=f"Pts: {status_df.iloc[index][2]}",  # Points
+                        delta=status,
                     )
 
             col1, col2, col3 = st.columns(3)
             with col1:
                 penalties_scored_df = pd.DataFrame(
                     {
-                        "Penalties Scored": [teams_df.iloc[0][4], teams_df.iloc[1][4], teams_df.iloc[2][4], teams_df.iloc[3][4], teams_df.iloc[4][4]],
-                        "Team": [teams_df.iloc[0][2], teams_df.iloc[1][2], teams_df.iloc[2][2], teams_df.iloc[3][2], teams_df.iloc[4][2]]
+                        "Penalties Scored": [
+                            teams_df.iloc[0][4],
+                            teams_df.iloc[1][4],
+                            teams_df.iloc[2][4],
+                            teams_df.iloc[3][4],
+                            teams_df.iloc[4][4],
+                        ],
+                        "Team": [
+                            teams_df.iloc[0][2],
+                            teams_df.iloc[1][2],
+                            teams_df.iloc[2][2],
+                            teams_df.iloc[3][2],
+                            teams_df.iloc[4][2],
+                        ],
                     }
                 )
 
@@ -193,14 +253,26 @@ def streamlit_app():
                         ),
                     },
                     hide_index=True,
-                    key="penalties_scored"
+                    key="penalties_scored",
                 )
 
             with col2:
                 average_goals_df = pd.DataFrame(
                     {
-                        "Average Goals": [teams_df.iloc[0][6], teams_df.iloc[1][6], teams_df.iloc[2][6], teams_df.iloc[3][6], teams_df.iloc[4][6]],
-                        "Team": [teams_df.iloc[0][2], teams_df.iloc[1][2], teams_df.iloc[2][2], teams_df.iloc[3][2], teams_df.iloc[4][2]]
+                        "Average Goals": [
+                            teams_df.iloc[0][6],
+                            teams_df.iloc[1][6],
+                            teams_df.iloc[2][6],
+                            teams_df.iloc[3][6],
+                            teams_df.iloc[4][6],
+                        ],
+                        "Team": [
+                            teams_df.iloc[0][2],
+                            teams_df.iloc[1][2],
+                            teams_df.iloc[2][2],
+                            teams_df.iloc[3][2],
+                            teams_df.iloc[4][2],
+                        ],
                     }
                 )
 
@@ -216,14 +288,26 @@ def streamlit_app():
                         ),
                     },
                     hide_index=True,
-                    key="average_goals"
+                    key="average_goals",
                 )
 
             with col3:
                 win_streak_df = pd.DataFrame(
                     {
-                        "Win Streak": [teams_df.iloc[0][7], teams_df.iloc[1][7], teams_df.iloc[2][7], teams_df.iloc[3][7], teams_df.iloc[4][7]],
-                        "Team": [teams_df.iloc[0][2], teams_df.iloc[1][2], teams_df.iloc[2][2], teams_df.iloc[3][2], teams_df.iloc[4][2]]
+                        "Win Streak": [
+                            teams_df.iloc[0][7],
+                            teams_df.iloc[1][7],
+                            teams_df.iloc[2][7],
+                            teams_df.iloc[3][7],
+                            teams_df.iloc[4][7],
+                        ],
+                        "Team": [
+                            teams_df.iloc[0][2],
+                            teams_df.iloc[1][2],
+                            teams_df.iloc[2][2],
+                            teams_df.iloc[3][2],
+                            teams_df.iloc[4][2],
+                        ],
                     }
                 )
 
@@ -235,11 +319,11 @@ def streamlit_app():
                             help="The Win Streak by Each Team.",
                             format="%d",
                             min_value=0,
-                            max_value=15
+                            max_value=15,
                         ),
                     },
                     hide_index=True,
-                    key="win_streak"
+                    key="win_streak",
                 )
 
             st.subheader("Current Standings")
@@ -253,14 +337,21 @@ def streamlit_app():
 
             px.set_mapbox_access_token(mapbox_access_token)
 
-            stadium_map = px.scatter_mapbox(stadiums_df, lat="Latitude", lon="Longitude", hover_name="Stadium", hover_data="Team")
+            stadium_map = px.scatter_mapbox(
+                stadiums_df,
+                lat="Latitude",
+                lon="Longitude",
+                hover_name="Stadium",
+                hover_data="Team",
+            )
 
             stadium_map.update_layout(
-                mapbox_style="light", 
-                margin={"r":0,"t":0,"l":0,"b":0}, 
-                mapbox_bounds={"west": -17, "east": 17, "south": 45, "north": 60})
+                mapbox_style="light",
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                mapbox_bounds={"west": -17, "east": 17, "south": 45, "north": 60},
+            )
 
-            stadium_map.update_traces(marker=dict(size=8), marker_color="indigo") 
+            stadium_map.update_traces(marker=dict(size=8), marker_color="indigo")
 
             stadium_map.update_mapboxes(zoom=4)
 
@@ -279,11 +370,10 @@ def streamlit_app():
                     <a target="_blank" rel="noopener noreferrer" href="https://medium.com/@digitialghost-dev"><i class='fa-brands fa-medium fa-2x fa-fade' style='color: #000000;'></i></a>
                 </div>
                 """
-            )     
+            )
 
         # --------- Statistics Tab ---------
         with tab2:
-            
             st.subheader("Top 5 Teams")
 
             col1, col2, col3, col4, col5 = st.columns(5)
@@ -291,47 +381,128 @@ def streamlit_app():
             with col1:
                 # First top team.
                 # st.markdown(f"![Image]({(teams_df.iloc[0][0])})")
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[0][0])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>1st / Form (Last 5):</b> {((teams_df.iloc[0][1])[-5:])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Clean Sheets:</b> {(teams_df.iloc[0][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[0][4])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[0][5])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[0][0])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>1st / Form (Last 5):</b> {((teams_df.iloc[0][1])[-5:])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Clean Sheets:</b> {(teams_df.iloc[0][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[0][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[0][5])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with col2:
                 # Second top team.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[1][0])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>2nd / Form (Last 5):</b> {((teams_df.iloc[1][1])[-5:])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Clean Sheets:</b> {(teams_df.iloc[1][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[1][4])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[1][5])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[1][0])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>2nd / Form (Last 5):</b> {((teams_df.iloc[1][1])[-5:])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Clean Sheets:</b> {(teams_df.iloc[1][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[1][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[1][5])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with col3:
                 # Third top team.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[2][0])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>3rd / Form (Last 5):</b> {((teams_df.iloc[2][1])[-5:])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>lean Sheets:</b> {(teams_df.iloc[2][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[2][4])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[2][5])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[2][0])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>3rd / Form (Last 5):</b> {((teams_df.iloc[2][1])[-5:])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>lean Sheets:</b> {(teams_df.iloc[2][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[2][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[2][5])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with col4:
                 # Fourth top team.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[3][0])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>4th / Form (Last 5):</b> {((teams_df.iloc[3][1])[-5:])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>lean Sheets:</b> {(teams_df.iloc[3][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[3][4])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[3][5])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[3][0])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>4th / Form (Last 5):</b> {((teams_df.iloc[3][1])[-5:])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>lean Sheets:</b> {(teams_df.iloc[3][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[3][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[3][5])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with col5:
                 # Fifth top team.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[4][0])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>5th / Form (Last 5):</b> {((teams_df.iloc[4][1])[-5:])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Clean Sheets:</b> {(teams_df.iloc[4][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[4][4])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[4][5])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(teams_df.iloc[4][0])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>5th / Form (Last 5):</b> {((teams_df.iloc[4][1])[-5:])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Clean Sheets:</b> {(teams_df.iloc[4][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Scored:</b> {(teams_df.iloc[4][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Penalties Missed:</b> {(teams_df.iloc[4][5])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             team_forms = [[], [], [], [], []]
 
-            forms = [teams_df.iloc[0][1], teams_df.iloc[1][1], teams_df.iloc[2][1], teams_df.iloc[3][1], teams_df.iloc[4][1]]
+            forms = [
+                teams_df.iloc[0][1],
+                teams_df.iloc[1][1],
+                teams_df.iloc[2][1],
+                teams_df.iloc[3][1],
+                teams_df.iloc[4][1],
+            ]
 
             count = 0
             while count < 5:
@@ -356,7 +527,15 @@ def streamlit_app():
                 str(standings_df.iloc[4][1]),
             ]
 
-            zipped = list(zip(team_forms[0], team_forms[1], team_forms[2], team_forms[3], team_forms[4]))
+            zipped = list(
+                zip(
+                    team_forms[0],
+                    team_forms[1],
+                    team_forms[2],
+                    team_forms[3],
+                    team_forms[4],
+                )
+            )
 
             df = pd.DataFrame(zipped, columns=headers)
 
@@ -367,53 +546,143 @@ def streamlit_app():
             st.line_chart(data=df)
 
             st.subheader("Top 5 Scorers")
-            
+
             col1, col2, col3, col4, col5 = st.columns(5)
 
             with col1:
                 # First top scorer.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[0][5])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[0][0])}</b></p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[0][1])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[0][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[0][2])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[0][4])}</p>", unsafe_allow_html=True)
-            
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[0][5])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[0][0])}</b></p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[0][1])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[0][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[0][2])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[0][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+
             with col2:
                 # Second top scorer.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[1][5])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[1][0])}</b></p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[1][1])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[1][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[1][2])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[1][4])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[1][5])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[1][0])}</b></p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[1][1])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[1][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[1][2])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[1][4])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with col3:
                 # Third top scorer.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[2][5])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[2][0])}</b></p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[2][1])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[2][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[2][2])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[2][4])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[2][5])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[2][0])}</b></p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[2][1])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[2][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[2][2])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[2][4])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with col4:
                 # Fourth top scorer.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[3][5])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[3][0])}</b></p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[3][1])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[3][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[3][2])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[3][4])}</p>", unsafe_allow_html=True)
-                
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[3][5])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[3][0])}</b></p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[3][1])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[3][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[3][2])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[3][4])}</p>",
+                    unsafe_allow_html=True,
+                )
+
             with col5:
                 # Fifth top scorer.
-                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[4][5])}'/>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[4][0])}</b></p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[4][1])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[4][3])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[4][2])}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[4][4])}</p>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 150px;' src='{(top_scorers_df.iloc[4][5])}'/>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center; padding-top: 0.8rem;'><b>{(top_scorers_df.iloc[4][0])}</b></p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Goals:</b> {(top_scorers_df.iloc[4][1])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Assists:</b> {(top_scorers_df.iloc[4][3])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Team:</b> {(top_scorers_df.iloc[4][2])}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<p style='text-align: center;'><b>Nationality:</b> {(top_scorers_df.iloc[4][4])}</p>",
+                    unsafe_allow_html=True,
+                )
 
             with st.container():
                 st.subheader("")
@@ -422,54 +691,144 @@ def streamlit_app():
                 col1, col2, col3, col4, col5 = st.columns(5)
 
                 with col1:
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[5][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>6th / {((teams_df.iloc[5][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[5][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>6th / {((teams_df.iloc[5][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[10][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>11th / {((teams_df.iloc[10][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[10][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>11th / {((teams_df.iloc[10][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[15][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>16th / {((teams_df.iloc[15][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[15][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>16th / {((teams_df.iloc[15][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
                 with col2:
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[6][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>7th / {((teams_df.iloc[6][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[6][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>7th / {((teams_df.iloc[6][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[11][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>12th / {((teams_df.iloc[11][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[11][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>12th / {((teams_df.iloc[11][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[16][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>17th / {((teams_df.iloc[16][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[16][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>17th / {((teams_df.iloc[16][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
                 with col3:
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[7][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>8th / {((teams_df.iloc[7][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[7][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>8th / {((teams_df.iloc[7][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[12][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>13th / {((teams_df.iloc[12][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[12][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>13th / {((teams_df.iloc[12][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[17][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>18th / {((teams_df.iloc[17][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[17][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>18th / {((teams_df.iloc[17][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
                 with col4:
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[8][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>9th / {((teams_df.iloc[8][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[8][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>9th / {((teams_df.iloc[8][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[13][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>14th / {((teams_df.iloc[13][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[13][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>14th / {((teams_df.iloc[13][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[18][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>19th / {((teams_df.iloc[18][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[18][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>19th / {((teams_df.iloc[18][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
                 with col5:
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[9][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>10th / {((teams_df.iloc[9][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[9][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>10th / {((teams_df.iloc[9][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[14][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>15th / {((teams_df.iloc[14][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[14][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>15th / {((teams_df.iloc[14][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
-                    st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[19][0])}'/>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align: center; padding-top: 0.8rem;'>20th / {((teams_df.iloc[19][1])[-5:])}</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{(teams_df.iloc[19][0])}'/>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align: center; padding-top: 0.8rem;'>20th / {((teams_df.iloc[19][1])[-5:])}</p>",
+                        unsafe_allow_html=True,
+                    )
 
             # Social media icons section.
             st.divider()
@@ -493,13 +852,15 @@ def streamlit_app():
             # Looping through each collection to get each round.
             round_count = int(max_round[0])
             while round_count >= int(min_round[0]):
-
                 # Function to pull collection and documents.
                 def firestore_pull():
-
                     # Calling each document in the collection in ascending order by date.
-                    collection_ref = firestore_database.collection(f'Regular Season - {round_count}')
-                    query = collection_ref.order_by("date", direction=firestore.Query.ASCENDING)
+                    collection_ref = firestore_database.collection(
+                        f"Regular Season - {round_count}"
+                    )
+                    query = collection_ref.order_by(
+                        "date", direction=firestore.Query.ASCENDING
+                    )
                     results = query.stream()
 
                     # Setting an empty list. This list will contain each fixtures' details that can later be called by referecing its index.
@@ -507,39 +868,91 @@ def streamlit_app():
 
                     # Iterating through the query results to get the document ID (ex: 'Manchester City vs Burnley') and its data.
                     for doc in results:
-                        document_dict = {
-                            "id": doc.id,
-                            "data": doc.to_dict()
-                        }
+                        document_dict = {"id": doc.id, "data": doc.to_dict()}
                         documents.append(document_dict)
 
                     # Retrieving and formatting match date.
-                    match_date = [datetime.strptime(documents[count]['data']['date'], 
-                        '%Y-%m-%dT%H:%M:%S+00:00').strftime('%B %d{}, %Y - %H:%M').format("th" if 4<=int(datetime.strptime(documents[count]['data']['date'], 
-                        '%Y-%m-%dT%H:%M:%S+00:00').strftime("%d"))<=20 else {1:"st", 2:"nd", 3:"rd"}.get(int(datetime.strptime(documents[count]['data']['date'], 
-                        '%Y-%m-%dT%H:%M:%S+00:00').strftime("%d"))%10, "th")) for count in range(10)]
+                    match_date = [
+                        datetime.strptime(
+                            documents[count]["data"]["date"], "%Y-%m-%dT%H:%M:%S+00:00"
+                        )
+                        .strftime("%B %d{}, %Y - %H:%M")
+                        .format(
+                            "th"
+                            if 4
+                            <= int(
+                                datetime.strptime(
+                                    documents[count]["data"]["date"],
+                                    "%Y-%m-%dT%H:%M:%S+00:00",
+                                ).strftime("%d")
+                            )
+                            <= 20
+                            else {1: "st", 2: "nd", 3: "rd"}.get(
+                                int(
+                                    datetime.strptime(
+                                        documents[count]["data"]["date"],
+                                        "%Y-%m-%dT%H:%M:%S+00:00",
+                                    ).strftime("%d")
+                                )
+                                % 10,
+                                "th",
+                            )
+                        )
+                        for count in range(10)
+                    ]
 
                     # Retrieving away and home goals for each match.
-                    away_goals = [documents[count]['data']['goals']['away'] for count in range(10)]
-                    home_goals = [documents[count]['data']['goals']['home'] for count in range(10)]
+                    away_goals = [
+                        documents[count]["data"]["goals"]["away"] for count in range(10)
+                    ]
+                    home_goals = [
+                        documents[count]["data"]["goals"]["home"] for count in range(10)
+                    ]
 
                     # Retrieving away and home team for each match.
-                    away_team = [documents[count]['data']['teams']['away']['name'] for count in range(10)]
-                    home_team = [documents[count]['data']['teams']['home']['name'] for count in range(10)]
+                    away_team = [
+                        documents[count]["data"]["teams"]["away"]["name"]
+                        for count in range(10)
+                    ]
+                    home_team = [
+                        documents[count]["data"]["teams"]["home"]["name"]
+                        for count in range(10)
+                    ]
 
                     # Retrieving away and home logo for each team.
-                    away_logo = [documents[count]['data']['teams']['away']['logo'] for count in range(10)]
-                    home_logo = [documents[count]['data']['teams']['home']['logo'] for count in range(10)]
+                    away_logo = [
+                        documents[count]["data"]["teams"]["away"]["logo"]
+                        for count in range(10)
+                    ]
+                    home_logo = [
+                        documents[count]["data"]["teams"]["home"]["logo"]
+                        for count in range(10)
+                    ]
 
-                    return match_date, away_goals, home_goals, away_team, home_team, away_logo, home_logo
+                    return (
+                        match_date,
+                        away_goals,
+                        home_goals,
+                        away_team,
+                        home_team,
+                        away_logo,
+                        home_logo,
+                    )
 
                 # Placing data in an expander.
                 with st.expander(f"Round {round_count}"):
-                    match_date, away_goals, home_goals, away_team, home_team, away_logo, home_logo = firestore_pull()
+                    (
+                        match_date,
+                        away_goals,
+                        home_goals,
+                        away_team,
+                        home_team,
+                        away_logo,
+                        home_logo,
+                    ) = firestore_pull()
 
                     count = 0
                     while count < 10:
-
                         # Creating a container for each match.
                         with st.container():
                             col1, col2, col3, col4, col5 = st.columns(5)
@@ -549,22 +962,43 @@ def streamlit_app():
 
                             # Home teams
                             with col2:
-                                st.markdown(f"<h3 style='text-align: center;'>{home_goals[count]}</h3>", unsafe_allow_html=True)
-                                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{home_logo[count]}'/>", unsafe_allow_html=True)  
+                                st.markdown(
+                                    f"<h3 style='text-align: center;'>{home_goals[count]}</h3>",
+                                    unsafe_allow_html=True,
+                                )
+                                st.markdown(
+                                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{home_logo[count]}'/>",
+                                    unsafe_allow_html=True,
+                                )
                                 st.write("")
                                 st.write("")
 
                             # Match date
                             with col3:
                                 st.write("")
-                                st.markdown("<p style='text-align: center;'><b>Match Date & Time</b></p>", unsafe_allow_html=True)
-                                st.markdown(f"<p style='text-align: center;'>{match_date[count]}</p>", unsafe_allow_html=True)
-                                st.markdown(f"<p style='text-align: center;'>{home_team[count]} vs. {away_team[count]}</p>", unsafe_allow_html=True)
-                        
+                                st.markdown(
+                                    "<p style='text-align: center;'><b>Match Date & Time</b></p>",
+                                    unsafe_allow_html=True,
+                                )
+                                st.markdown(
+                                    f"<p style='text-align: center;'>{match_date[count]}</p>",
+                                    unsafe_allow_html=True,
+                                )
+                                st.markdown(
+                                    f"<p style='text-align: center;'>{home_team[count]} vs. {away_team[count]}</p>",
+                                    unsafe_allow_html=True,
+                                )
+
                             # Away teams
                             with col4:
-                                st.markdown(f"<h3 style='text-align: center;'>{away_goals[count]}</h3>", unsafe_allow_html=True)
-                                st.markdown(f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{away_logo[count]}'/>", unsafe_allow_html=True)
+                                st.markdown(
+                                    f"<h3 style='text-align: center;'>{away_goals[count]}</h3>",
+                                    unsafe_allow_html=True,
+                                )
+                                st.markdown(
+                                    f"<img style='display: block; margin-left: auto; margin-right: auto; width: 75px;' src='{away_logo[count]}'/>",
+                                    unsafe_allow_html=True,
+                                )
                                 st.write("")
                                 st.write("")
 
@@ -591,5 +1025,6 @@ def streamlit_app():
                 </div>
                 """
             )
+
 
 streamlit_app()
