@@ -58,7 +58,7 @@ jobs:
           black streamlit_app.py --check || exit_code=$?
           echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
         
-  black-formatting:
+  black:
     runs-on: ubuntu-latest
     needs: [check-for-changes]
     if: ${{ needs.check-for-changes.outputs.exit_code == 1 }}
@@ -83,10 +83,10 @@ jobs:
 
   build-streamlit-image:
     runs-on: ubuntu-latest
-    needs: [check-for-changes, black-formatting]
+    needs: [check-for-changes, black]
     if: |
       always() &&
-      (needs.black-formatting.result == 'success' || needs.black-formatting.result == 'skipped')
+      (needs.black.result == 'success' || needs.black.result == 'skipped')
     
     steps:
       - name: Checkout
@@ -215,7 +215,7 @@ jobs:
       id-token: 'write'
       
     runs-on: ubuntu-latest
-    needs: [build-streamlit-image]
+    needs: [build-streamlit-image, snyk]
     if: |
       always() &&
       (needs.build-streamlit-image.result == 'success')
@@ -272,12 +272,12 @@ jobs:
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
 
-  pylint-check:
+  pylint:
     runs-on: ubuntu-latest
-    needs: [check-for-changes, black-formatting]
+    needs: [check-for-changes, black]
     if: |
       always() &&
-      (needs.black-formatting.result == 'success' || needs.black-formatting.result == 'skipped')
+      (needs.black.result == 'success' || needs.black.result == 'skipped')
       
     steps:
           
@@ -295,6 +295,7 @@ jobs:
       - name: Run Pylint
         continue-on-error: true
         run: pylint streamlit_app.py > pylint_output.txt
+
       - name: Upload Artifact	
         uses: actions/upload-artifact@v3	
         with:	
@@ -307,10 +308,10 @@ jobs:
       id-token: 'write'
 
     runs-on: ubuntu-latest
-    needs: [pylint-check]
+    needs: [pylint]
     if: |
       always() &&
-      (needs.pylint-check.result == 'success')
+      (needs.pylint.result == 'success')
 
     steps:
     
@@ -335,12 +336,8 @@ jobs:
           path: 'pylint_output.txt'
           destination: '${{ env.CLOUD_BUCKET }}'
   
-  security:
+  snyk:
     runs-on: ubuntu-latest
-    needs: [check-for-changes, black-formatting]
-    if: |
-      always() &&
-      (needs.black-formatting.result == 'success' || needs.black-formatting.result == 'skipped')
     
     permissions:
       actions: read
