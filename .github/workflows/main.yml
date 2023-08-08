@@ -28,6 +28,8 @@ on:
       - "main"
         
 env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
   REGISTRY_IMAGE: digitalghostdev/premier-league
   VERSION_NUMBER: '3.1.0'
   
