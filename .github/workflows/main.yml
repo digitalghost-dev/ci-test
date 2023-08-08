@@ -39,11 +39,16 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-          - windows/amd64
     steps:
       
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -57,11 +62,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
       
-      - name: Build and push by digest
+      - name: Build and Push by Digest
         id: build
         uses: docker/build-push-action@v4
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          tags: digitalghostdev/premier-league:github
-          push: true
+          labels: ${{ steps.meta.outputs.labels }}
+          # tags: digitalghostdev/premier-league:github
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
