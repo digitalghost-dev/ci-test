@@ -32,8 +32,8 @@ env:
   VERSION_NUMBER: '3.1.0'
   CLOUD_BUCKET: ${{ secrets.CLOUD_BUCKET }}
   CLOUD_SQL_INSTANCE: ${{ secrets.CLOUD_SQL_INSTANCE }}
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
   EMAIL: ${{ secrets.EMAIL }}
   NAME: ${{ secrets.NAME }}
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -79,6 +79,7 @@ jobs:
       (needs.snyk.result == 'success')
     
     steps:
+
       - name: Checkout
         uses: actions/checkout@v3
         
@@ -118,6 +119,7 @@ jobs:
     if: |
       always() &&
       (needs.build-streamlit-image.result == 'success')
+
     steps:
     
       - name: Checkout
@@ -201,12 +203,18 @@ jobs:
 
   architecture-build:
     runs-on: ubuntu-latest
+    needs: [snyk]
+    if: |
+      always() &&
+      (needs.snyk.result == 'success')
+
     strategy:
       fail-fast: false
       matrix:
         platform:
           - linux/amd64
           - linux/arm64
+
     steps:
       
       - name: Checkout
@@ -227,8 +235,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_TOKEN }}
       
       - name: Build and Push by Digest
         id: build
@@ -257,6 +265,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - architecture-build
+
     steps:
 
       - name: Download Digests
@@ -278,8 +287,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_TOKEN }}
           
       - name: Create Manifest List and Push
         working-directory: /tmp/digests
@@ -301,6 +310,7 @@ jobs:
     if: |
       always() &&
       (needs.build-streamlit-image.result == 'success')
+
     steps:
     
       - name: Checkout
@@ -339,6 +349,7 @@ jobs:
     if: |
       always() &&
       (needs.syft.result == 'success')
+      
     steps:
     
       - name: Download SBOM
