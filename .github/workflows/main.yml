@@ -29,9 +29,11 @@ on:
         
 env:
   REGISTRY_IMAGE: digitalghostdev/premier-league
+  VERSION_NUMBER: '3.1.0'
+  
 
 jobs:
-  Architecture-Build:
+  architecture-build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -44,7 +46,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Docker meta
+      - name: Docker Meta
         id: meta
         uses: docker/metadata-action@v4
         with:
@@ -59,8 +61,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_TOKEN }}
       
       - name: Build and Push by Digest
         id: build
@@ -71,13 +73,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
 
-      - name: Export digest
+      - name: Export Digest
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
     
-      - name: Upload digest
+      - name: Upload Digest
         uses: actions/upload-artifact@v3
         with:
           name: digests
@@ -85,12 +87,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
   
-  Create-Manifest:
+  create-manifest-and-push:
     runs-on: ubuntu-latest
     needs:
-      - Architecture-Build
+      - architecture-build
     steps:
-      - name: Download digests
+
+      - name: Download Digests
         uses: actions/download-artifact@v3
         with:
           name: digests
@@ -104,15 +107,15 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY_IMAGE }}
-          tags: github_2
+          tags: ${{ env.VERSION_NUMBER }}
           
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_TOKEN }}
           
-      - name: Create manifest list and push
+      - name: Create Manifest List and Push
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
