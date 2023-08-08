@@ -203,10 +203,6 @@ jobs:
 
   architecture-build:
     runs-on: ubuntu-latest
-    needs: [snyk]
-    if: |
-      always() &&
-      (needs.snyk.result == 'success')
 
     strategy:
       fail-fast: false
