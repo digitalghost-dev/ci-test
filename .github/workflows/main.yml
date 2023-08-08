@@ -31,7 +31,7 @@ env:
   REGISTRY_IMAGE: digitalghostdev/premier-league
 
 jobs:
-  build:
+  Architecture-Build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -85,10 +85,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
   
-  merge:
+  Create-Manifest:
     runs-on: ubuntu-latest
     needs:
-      - build
+      - Architecture-Build
     steps:
       - name: Download digests
         uses: actions/download-artifact@v3
