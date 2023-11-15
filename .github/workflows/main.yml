@@ -16,8 +16,15 @@ on:
         - critical
         
   push:
+    paths-ignore:
+      - '.github/**'
     branches:
       - "main"
+
+  pull_request:
+    branches:
+      - fix
+      - test2
 
 jobs:
   lint:
