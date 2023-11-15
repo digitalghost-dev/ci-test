@@ -15,7 +15,8 @@ on:
     paths-ignore:
       - '.github/**'
     branches:
-      - "main"
+      - 'main'
+      - '!test'
       
   pull_request:
     branches:
