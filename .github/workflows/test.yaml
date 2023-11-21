@@ -33,6 +33,17 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    # build SQLite from source, because I need 3.35<=
+    - run: |
+        wget https://sqlite.org/2022/sqlite-autoconf-3380500.tar.gz
+        tar -xvf sqlite-autoconf-3380500.tar.gz
+    - run: |
+        ./configure
+        make
+        sudo make install
+        export PATH="/usr/local/lib:$PATH"
+      working-directory: sqlite-autoconf-3380500
+
     - name: Python Setup
       uses: actions/setup-python@v4
       with:
@@ -48,6 +59,8 @@ jobs:
     - name: Pytest Run
       run: |
          pytest --cov=streamlit_app tests/ -v
+      env:
+        LD_LIBRARY_PATH: /usr/local/lib
   
   test-2:
     runs-on: ubuntu-22.04
