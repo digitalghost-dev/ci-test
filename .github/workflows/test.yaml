@@ -27,7 +27,7 @@ on:
 
 jobs:
   streamlit-tests:
-    runs-on: ubuntu-20.04
+    runs-on: macos-13
 
     steps:
     - name: Checkout
