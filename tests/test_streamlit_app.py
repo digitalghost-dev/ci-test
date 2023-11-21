@@ -1,6 +1,6 @@
 from streamlit.testing.v1 import AppTest
 
-at = AppTest.from_file("streamlit_app.py", default_timeout=1000).run()
+at = AppTest.from_file("./streamlit_app.py", default_timeout=1000).run()
 
 def test_title_area():
     assert "Premier League Statistics / 2023-24" in at.title[0].value
