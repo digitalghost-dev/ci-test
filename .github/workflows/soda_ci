@@ -1,0 +1,41 @@
+name: Soda CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+
+  push:
+    paths-ignore:
+      - '.github/**'
+    branches:
+      - 'main'
+      - '!test'
+      
+  pull_request:
+    branches:
+      - 'main'
+      - 'fix'
+      - '!test'
+
+jobs:
+  soda_scan:
+    runs-on: ubuntu-latest
+    name: Run Soda Scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Perform Soda Scan
+        uses: sodadata/soda-github-action@v1
+        with:
+          soda_library_version: v1.0.4
+          data_source: snowflake
+          configuration: ./configuration.yaml
+          checks: ./checks.yaml
