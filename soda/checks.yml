@@ -1,0 +1,8 @@
+# Checks for the standings table.
+checks for standings:
+  - row_count = 20
+  - duplicate_count(team) = 0
+
+checks for teams:
+  - row_count = 20
+  - duplicate_count(team) = 0
