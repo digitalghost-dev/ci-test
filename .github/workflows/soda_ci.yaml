@@ -26,7 +26,7 @@ on:
 
 jobs:
   soda_scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Run Soda Scan
     steps:
       - name: Checkout
