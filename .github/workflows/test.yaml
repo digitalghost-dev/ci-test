@@ -42,7 +42,7 @@ jobs:
     - name: Install Pytest and Plugins
       run: |
         pip install pytest==7.4.3                               
-        pytest-cov==4.1.0
+        pip install pytest-cov==4.1.0
 
     - name: Run Pytest Checks
       run: |
