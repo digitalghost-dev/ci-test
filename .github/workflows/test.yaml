@@ -39,7 +39,7 @@ jobs:
       with:
         python-version: '3.11.6'
 
-    - name: Install Pytest and Plugins
+    - name: Install Dependencies
       run: |
         pip install plotly
         pip install streamlit
