@@ -41,6 +41,7 @@ jobs:
 
     - name: Install Dependencies
       run: |
+        pip install google-cloud-bigquery
         pip install firebase-admin
         pip install plotly
         pip install streamlit
