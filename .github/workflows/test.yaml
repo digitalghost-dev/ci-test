@@ -32,9 +32,19 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Print
+    - name: Python Setup
+      uses: actions/setup-python@4
+      with:
+        python-version: '3.11.6'
+
+    - name: Install Pytest and Plugins
       run: |
-        echo ${{ secrets.NAME }}
+        pip install pytest==7.4.3                               
+        pytest-cov==4.1.0
+
+    - name: Run Pytest Checks
+      run: |
+        pytest --cov=streamlit_app tests/ -v
 
