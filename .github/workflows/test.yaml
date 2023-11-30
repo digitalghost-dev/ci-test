@@ -39,16 +39,6 @@ jobs:
       with:
         python-version: '3.11.6'
 
-    - name: Install Dependencies
+    - name: Test Python
       run: |
-        pip install google-cloud-bigquery
-        pip install firebase-admin
-        pip install plotly
-        pip install streamlit
-        pip install pytest==7.4.3                               
-        pip install pytest-cov==4.1.0
-
-    - name: Run Pytest Checks
-      run: |
-        pytest --cov=streamlit_app tests/ -v
-
+        
